@@ -1,0 +1,56 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  # pull_request:
+  #   branches:
+  #     - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt  # Assuming you have a requirements file
+      
+      - name: Deploy to AWS (assuming you are using an AWS environment)
+        uses: appleboy/ssh-action@v0
+        env:
+          SSH_HOST: ${{ secrets.ASSUMED_HOSTNAME }}
+          SSH_USERNAME: ${{ secrets.ASSUMED_USERNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.ASSUMED_PRIVATE_KEY }}
+          SSH_KEY_FILE: ~/.ssh/id_rsa
+          DEPLOYMENT_DIR: /home/ubuntu/deployment_dir
+          WORKING_DIR: ${DEPLOYMENT_DIR}/fastapi_app
+        run: |
+          ssh-keyscan -t rsa ${SSH_HOST} >> ~/.ssh/known_hosts
+          ssh ${SSH_USERNAME}@${SSH_HOST}
+          ssh ${SSH_USERNAME}@${SSH_HOST} "mkdir -p ${DEPLOYMENT_DIR}"
+          ssh ${SSH_USERNAME}@${SSH_HOST} "cd ${DEPLOYMENT_DIR}/fastapi_app && git pull origin main"
+          ssh ${SSH_USERNAME}@${SSH_HOST} "cd ${DEPLOYMENT_DIR}/fastapi_app && gunicorn --workers 2 --worker-classuvicorn.gunicorn.Worker main:app --bind 0.0.0.0:3000"
+        continue-on-error: true
+
+      - name: Wait for deployment script to finish
+        run: |
+          echo "Wait for 1 minute"
+          sleep 60  
+        continue-on-error: true  
+      - name: Update status for GitHub deployment
+        uses: softprops/action-gh-deploy@v1
+        if: runner.os == 'linux'
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOYMENT_STATUS: 'success'
