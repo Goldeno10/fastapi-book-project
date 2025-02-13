@@ -12,13 +12,13 @@ jobs:
         run: |
               mkdir ~/.ssh
               chmod 700 ~/.ssh
-              ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+              ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOSTNAME }} >> ~/.ssh/known_hosts
               chmod 600 ~/.ssh/known_hosts
         
       - name: Deploy with github
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.HOSTNAMET }}
+          host: ${{ secrets.HOSTNAME }}
           username: ${{ secrets.USER_NAME }}
           key: ${{ secrets.PRIVATE_KEY }}
           port: ${{ secrets.PORT }}
