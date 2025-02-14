@@ -4,17 +4,18 @@ on:
     branches:
       - main
 jobs:
-  build-and-deploy:
+  deploy:
+    name: Deploy Aplication
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Adding Known Hosts
         run: |
-              mkdir ~/.ssh
-              chmod 700 ~/.ssh
-              ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOSTNAME }} >> ~/.ssh/known_hosts
-              chmod 600 ~/.ssh/known_hosts
-        
+          mkdir ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOSTNAME }} >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Deploy with github
         uses: appleboy/ssh-action@master
         with:
@@ -24,9 +25,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd ${{ secrets.DEPLOY_DIR }}
-            git fetch --all 
-            git reset --hard origin/main
-            git clean -d -f --exclude secrets
+            git pull origin main
             source .venv/bin/activate
             pip install -r requirements.txt
             sudo systemctl restart fastapi
